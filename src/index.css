@@ -1,0 +1,189 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #131314;
+  background: radial-gradient(circle at 50% 65%, rgba(20, 35, 60, 0.35) 0%, #131314 70%);
+  background-attachment: fixed;
+  color: #e3e3e3;
+  overflow: hidden;
+}
+
+.gemini-gradient-text {
+  background: linear-gradient(135deg, #4da2ff 0%, #9b72cf 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #282a2c;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #383a3d;
+}
+
+/* Pulse animation */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.95); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Subtle message fade-in and slide-up */
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Gemini Ambient Shimmer Wave */
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+
+/* Markdown styling inside assistant responses */
+.prose-dark {
+  color: #ececec;
+  font-size: 0.96rem;
+  line-height: 1.7;
+}
+
+.prose-dark p {
+  margin-top: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.prose-dark strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.prose-dark a {
+  color: #10b981;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+
+.prose-dark a:hover {
+  color: #34d399;
+}
+
+.prose-dark ul {
+  list-style-type: disc;
+  margin-left: 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose-dark ol {
+  list-style-type: decimal;
+  margin-left: 1.25rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose-dark li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.prose-dark blockquote {
+  border-left: 3px solid #10b981;
+  padding-left: 0.85rem;
+  margin-left: 0;
+  margin-right: 0;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.prose-dark pre {
+  background-color: #181818;
+  border: 1px solid #2d2d2d;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose-dark code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background-color: #262626;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: #e5e7eb;
+}
+
+.prose-dark pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.prose-dark table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.prose-dark th, .prose-dark td {
+  border: 1px solid #333333;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.prose-dark th {
+  background-color: #1f1f1f;
+  color: #f3f4f6;
+  font-weight: 600;
+}
+
+.prose-dark tr:nth-child(even) {
+  background-color: #171717;
+}

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "nexis-ai": {
+      "command": "/Users/prajwalnaik/Desktop/nexis/venv/bin/python",
+      "args": [
+        "/Users/prajwalnaik/Desktop/nexis/nexis_mcp_bundle.py"
+      ],
+      "env": {
+        "PYTHONPATH": "/Users/prajwalnaik/Desktop/nexis"
+      }
+    }
+  }
+}

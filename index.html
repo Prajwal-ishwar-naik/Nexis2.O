@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexis AI — Civic & Domain Intelligence Platform</title>
+  
+  <!-- Inter & JetBrains Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  
+  <!-- FontAwesome v6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            app: '#0d0d0d',
+            sidebar: '#171717',
+            canvas: '#212121',
+            inputcard: '#2f2f2f',
+            cardhover: '#262626',
+            bordercol: '#333333',
+            brand: '#10a37f',
+            brandhover: '#1a7f64',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Marked.js for High-Fidelity Markdown Parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    /* Custom ChatGPT-style Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    /* Markdown Styling in Messages */
+    .prose-content {
+      line-height: 1.65;
+      font-size: 0.95rem;
+    }
+    .prose-content p {
+      margin-bottom: 0.85rem;
+    }
+    .prose-content p:last-child {
+      margin-bottom: 0;
+    }
+    .prose-content h1, .prose-content h2, .prose-content h3 {
+      font-weight: 600;
+      color: #f3f4f6;
+      margin-top: 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+    .prose-content h1 { font-size: 1.35rem; }
+    .prose-content h2 { font-size: 1.2rem; border-bottom: 1px solid #333; padding-bottom: 0.25rem; }
+    .prose-content h3 { font-size: 1.05rem; }
+    .prose-content ul, .prose-content ol {
+      margin-left: 1.5rem;
+      margin-bottom: 0.85rem;
+    }
+    .prose-content ul { list-style-type: disc; }
+    .prose-content ol { list-style-type: decimal; }
+    .prose-content li { margin-bottom: 0.35rem; }
+    .prose-content code {
+      background: #2a2a2a;
+      padding: 0.15rem 0.35rem;
+      border-radius: 0.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85em;
+      color: #38bdf8;
+    }
+    .prose-content pre {
+      background: #141414;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      border: 1px solid #333;
+    }
+    .prose-content pre code {
+      background: transparent;
+      padding: 0;
+      color: #e5e7eb;
+      font-size: 0.875rem;
+    }
+    .prose-content blockquote {
+      border-left: 3px solid #10a37f;
+      padding-left: 0.85rem;
+      color: #9ca3af;
+      margin: 0.85rem 0;
+      font-style: italic;
+    }
+    .prose-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.875rem;
+    }
+    .prose-content th, .prose-content td {
+      border: 1px solid #383838;
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+    .prose-content th {
+      background: #262626;
+      font-weight: 600;
+    }
+    .prose-content tr:nth-child(even) {
+      background: #1a1a1a;
+    }
+    .prose-content a {
+      color: #38bdf8;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      transition: color 0.15s;
+    }
+    .prose-content a:hover {
+      color: #7dd3fc;
+    }
+
+    /* Pulse animation */
+    @keyframes subtle-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.98); }
+    }
+    .pulse-indicator {
+      animation: subtle-pulse 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-app text-gray-200 font-sans antialiased h-screen overflow-hidden flex flex-row select-none">
+
+  <!-- ============================================================== -->
+  <!-- SIDEBAR NAVIGATION (#171717)                                    -->
+  <!-- ============================================================== -->
+  <aside id="sidebar" class="w-64 bg-sidebar border-r border-bordercol flex flex-col justify-between shrink-0 transition-all duration-300 z-30">
+    <!-- Top Branding & Navigation -->
+    <div class="p-3 flex flex-col gap-2">
+      <!-- Nexis Brand Header & Collapse Icon -->
+      <div class="flex items-center justify-between px-2 py-2">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-black font-bold text-sm shadow-md">
+            <i class="fa-solid fa-bolt-lightning text-xs"></i>
+          </div>
+          <span class="font-bold text-lg tracking-wide text-white">Nexis</span>
+          <span class="text-[10px] uppercase font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 px-1.5 py-0.5 rounded">Cluster</span>
+        </div>
+        <button id="sidebar-toggle" title="Toggle Sidebar" class="text-gray-400 hover:text-white p-1.5 rounded-md hover:bg-cardhover transition">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
+      </div>
+
+      <!-- New Chat Button -->
+      <button id="new-chat-btn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-transparent hover:bg-cardhover border border-bordercol text-sm font-medium text-gray-200 hover:text-white transition group">
+        <i class="fa-solid fa-plus text-xs text-gray-400 group-hover:text-emerald-400 transition"></i>
+        <span>New Chat</span>
+      </button>
+
+      <!-- Action Modals Triggers -->
+      <div class="flex flex-col gap-1 mt-2 text-xs font-medium text-gray-400">
+        <button id="nav-vision-btn" class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-cardhover hover:text-gray-200 transition text-left">
+          <i class="fa-solid fa-file-medical text-emerald-400 w-4"></i>
+          <span>Prescriptions & OCR</span>
+        </button>
+        <button id="nav-edu-btn" class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-cardhover hover:text-gray-200 transition text-left">
+          <i class="fa-solid fa-book-open text-sky-400 w-4"></i>
+          <span>Academic Library</span>
+        </button>
+        <button id="nav-mcp-btn" class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-cardhover hover:text-gray-200 transition text-left">
+          <i class="fa-solid fa-network-wired text-purple-400 w-4"></i>
+          <span>MCP Tools (10 Active)</span>
+        </button>
+      </div>
+
+      <!-- Recents Header -->
+      <div class="flex items-center justify-between px-3 mt-4 mb-1">
+        <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Recents</span>
+        <button id="clear-chats-btn" title="Clear all chats" class="text-gray-500 hover:text-red-400 text-xs transition">
+          <i class="fa-regular fa-trash-can"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Scrollable Chat History Sessions -->
+    <div id="chat-history-list" class="flex-1 overflow-y-auto px-2 space-y-1 select-none">
+      <!-- Empty State / Dynamically Appended -->
+      <div id="history-empty" class="text-center py-8 text-xs text-gray-500 italic">
+        No recent chats yet
+      </div>
+    </div>
+
+    <!-- Sidebar Bottom Profile / Cluster Diagnostics Card -->
+    <div class="p-3 border-t border-bordercol bg-sidebar">
+      <div class="flex items-center justify-between p-2 rounded-lg bg-[#1f1f1f] border border-[#2a2a2a]">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="relative">
+            <div id="cluster-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-indicator"></div>
+          </div>
+          <div class="min-w-0">
+            <div id="cluster-status-text" class="text-xs font-medium text-gray-200 truncate">Nexis Cluster: 5 Nodes</div>
+            <div id="geo-status-text" class="text-[10px] text-gray-400 truncate">Resolving GPS...</div>
+          </div>
+        </div>
+        <button id="refresh-health-btn" title="Refresh Health Probe" class="text-gray-400 hover:text-white p-1 transition">
+          <i class="fa-solid fa-arrows-rotate text-xs"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================================== -->
+  <!-- MAIN CHAT CANVAS & CONVERSATION VIEW                           -->
+  <!-- ============================================================== -->
+  <main class="flex-1 flex flex-col bg-canvas h-full relative overflow-hidden">
+    
+    <!-- Top Mobile Header (visible only on small screens) -->
+    <div class="md:hidden flex items-center justify-between p-3 border-b border-bordercol bg-sidebar">
+      <div class="flex items-center gap-2">
+        <button id="mobile-toggle" class="text-gray-300 p-1">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <span class="font-bold text-white">Nexis</span>
+      </div>
+      <button id="mobile-new-chat" class="text-gray-300 p-1">
+        <i class="fa-solid fa-pen-to-square"></i>
+      </button>
+    </div>
+
+    <!-- Scrollable Messages Container -->
+    <div id="chat-scroller" class="flex-1 overflow-y-auto px-4 py-6 md:px-8 flex flex-col items-center">
+      <div class="w-full max-w-3xl flex flex-col gap-6">
+
+        <!-- Central Hero Section (Rendered on fresh session) -->
+        <section id="hero-section" class="flex flex-col items-center justify-center my-auto py-16 text-center transition-all duration-500">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-black font-extrabold text-2xl shadow-xl shadow-emerald-950/40 mb-6">
+            <i class="fa-solid fa-bolt-lightning"></i>
+          </div>
+          <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-white mb-2">
+            What's on the agenda today?
+          </h1>
+          <p class="text-sm text-gray-400 max-w-md mb-8">
+            Nexis connects real-time citizen intelligence across Agriculture, Emergency Health, Education, and Civic Welfare.
+          </p>
+
+          <!-- 3 Suggestion Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 w-full max-w-2xl text-left">
+            <!-- Agri Card -->
+            <div class="suggestion-card p-4 rounded-xl bg-sidebar hover:bg-cardhover border border-bordercol cursor-pointer transition flex flex-col justify-between group" data-prompt="What is the modal price of Tomato in Karnataka right now?">
+              <div>
+                <div class="w-7 h-7 rounded-md bg-amber-950/70 text-amber-400 flex items-center justify-center mb-2 text-sm border border-amber-800/50">
+                  <i class="fa-solid fa-wheat-awn"></i>
+                </div>
+                <div class="text-xs font-semibold text-gray-200 group-hover:text-white">Agriculture Mandi</div>
+                <div class="text-[11px] text-gray-400 mt-1 line-clamp-2">Live Agmarknet mandi rates for crops</div>
+              </div>
+              <div class="mt-3 text-[10px] text-emerald-400 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                <span>Query live API</span> <i class="fa-solid fa-arrow-right text-[8px]"></i>
+              </div>
+            </div>
+
+            <!-- Health Card -->
+            <div class="suggestion-card p-4 rounded-xl bg-sidebar hover:bg-cardhover border border-bordercol cursor-pointer transition flex flex-col justify-between group" data-prompt="Find 24/7 emergency trauma hospitals near my location">
+              <div>
+                <div class="w-7 h-7 rounded-md bg-rose-950/70 text-rose-400 flex items-center justify-center mb-2 text-sm border border-rose-800/50">
+                  <i class="fa-solid fa-hospital"></i>
+                </div>
+                <div class="text-xs font-semibold text-gray-200 group-hover:text-white">Emergency Healthcare</div>
+                <div class="text-[11px] text-gray-400 mt-1 line-clamp-2">Locate emergency trauma facilities near me</div>
+              </div>
+              <div class="mt-3 text-[10px] text-emerald-400 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                <span>Query Overpass</span> <i class="fa-solid fa-arrow-right text-[8px]"></i>
+              </div>
+            </div>
+
+            <!-- Education Card -->
+            <div class="suggestion-card p-4 rounded-xl bg-sidebar hover:bg-cardhover border border-bordercol cursor-pointer transition flex flex-col justify-between group" data-prompt="Teach me Dijkstra shortest path algorithm with a video demonstration">
+              <div>
+                <div class="w-7 h-7 rounded-md bg-sky-950/70 text-sky-400 flex items-center justify-center mb-2 text-sm border border-sky-800/50">
+                  <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div class="text-xs font-semibold text-gray-200 group-hover:text-white">Education & Tutoring</div>
+                <div class="text-[11px] text-gray-400 mt-1 line-clamp-2">Socratic tutoring & academic paper lookup</div>
+              </div>
+              <div class="mt-3 text-[10px] text-emerald-400 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                <span>arXiv & YouTube</span> <i class="fa-solid fa-arrow-right text-[8px]"></i>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Message Stream Thread -->
+        <div id="messages-container" class="w-full flex flex-col gap-6 select-text pb-6 hidden">
+          <!-- Dynamically Injected Messages -->
+        </div>
+
+        <!-- Animated Typing / Cluster Querying Indicator -->
+        <div id="typing-indicator" class="hidden flex items-center gap-3 px-4 py-3 rounded-xl bg-sidebar border border-bordercol max-w-md select-none text-xs text-gray-300">
+          <div class="flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style="animation-delay: 0s;"></span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style="animation-delay: 0.2s;"></span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style="animation-delay: 0.4s;"></span>
+          </div>
+          <span id="typing-status" class="font-medium text-gray-300">Nexis is querying live distributed microservices...</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- DOCKED CHAT INPUT DECK (#2f2f2f)                               -->
+    <!-- ============================================================== -->
+    <div class="w-full shrink-0 flex flex-col items-center px-4 pb-4 bg-gradient-to-t from-canvas via-canvas to-transparent pt-3 z-20">
+      <div class="w-full max-w-3xl">
+        
+        <!-- Input Box Card -->
+        <div class="w-full bg-inputcard rounded-2xl border border-[#3e3e3e] shadow-2xl p-2.5 flex flex-col focus-within:border-emerald-600/70 transition">
+          
+          <!-- Multiline Textarea -->
+          <textarea
+            id="chat-input"
+            rows="1"
+            placeholder="Ask Nexis anything (e.g., mandi rates, nearest hospital, welfare eligibility)..."
+            class="w-full bg-transparent border-none outline-none text-sm text-gray-100 placeholder-gray-400 px-3 py-1.5 resize-none max-h-48 overflow-y-auto leading-relaxed"
+          ></textarea>
+
+          <!-- Input Action Bar -->
+          <div class="flex items-center justify-between pt-2 px-1">
+            
+            <!-- Left Action Tools -->
+            <div class="flex items-center gap-1.5 text-xs text-gray-400">
+              <!-- Upload Attachment Button -->
+              <button id="attach-btn" title="Upload Prescription / Lab Report" class="p-2 rounded-lg hover:bg-cardhover hover:text-white transition flex items-center gap-1">
+                <i class="fa-solid fa-plus text-sm"></i>
+              </button>
+
+              <!-- Deep Reasoning Toggle -->
+              <button id="think-toggle" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-bordercol bg-sidebar hover:bg-cardhover text-gray-300 transition text-[11px]">
+                <i class="fa-regular fa-lightbulb text-amber-400"></i>
+                <span id="think-label">Think</span>
+              </button>
+
+              <!-- Live Web Grounding Toggle -->
+              <button id="web-toggle" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-bordercol bg-sidebar hover:bg-cardhover text-emerald-400 transition text-[11px]">
+                <i class="fa-solid fa-globe"></i>
+                <span>Grounding Active</span>
+              </button>
+            </div>
+
+            <!-- Right Controls: Mic & Send -->
+            <div class="flex items-center gap-2">
+              <button id="mic-btn" title="Voice Dictation" class="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-cardhover transition">
+                <i class="fa-solid fa-microphone text-sm"></i>
+              </button>
+              <button id="send-btn" title="Send Query" class="w-8 h-8 rounded-full bg-white text-black hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center transition shadow">
+                <i class="fa-solid fa-arrow-up text-sm font-bold"></i>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Privacy & Emergency Footer -->
+        <p class="text-[11px] text-gray-500 text-center mt-2 tracking-tight">
+          Nexis AI connects live to municipal, health, and agricultural databases. For acute medical emergencies, dial 108 immediately.
+        </p>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 1: PRESCRIPTIONS & OCR MODAL                             -->
+  <!-- ============================================================== -->
+  <div id="vision-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-sidebar border border-bordercol rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-4 border-b border-bordercol">
+        <div class="flex items-center gap-2.5">
+          <i class="fa-solid fa-file-prescription text-emerald-400 text-lg"></i>
+          <h3 class="font-semibold text-white text-base">Multimodal Prescription & OCR</h3>
+        </div>
+        <button id="close-vision-modal" class="text-gray-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="my-5 flex flex-col gap-4">
+        <p class="text-xs text-gray-400 leading-relaxed">
+          Upload medical documents (handwritten prescriptions, pathology reports, hematology summaries). Nexis Vision extracts medicines, lab flags, and appends safety disclaimers with zero digit leakage.
+        </p>
+        
+        <label for="vision-file-input" class="border-2 border-dashed border-[#3a3a3a] hover:border-emerald-500/60 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition bg-[#1b1b1b]">
+          <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
+          <span class="text-xs font-medium text-gray-200">Click to upload or drag image/PDF</span>
+          <span class="text-[10px] text-gray-500 mt-1">Supports PNG, JPG, WEBP</span>
+          <input type="file" id="vision-file-input" accept="image/*" class="hidden" />
+        </label>
+
+        <div id="vision-preview-container" class="hidden flex items-center gap-3 p-3 rounded-lg bg-[#222] border border-[#333]">
+          <img id="vision-preview-img" src="" alt="Document Preview" class="w-12 h-12 rounded object-cover border border-[#444]" />
+          <div class="flex-1 min-w-0">
+            <p id="vision-file-name" class="text-xs font-medium text-white truncate"></p>
+            <p id="vision-file-size" class="text-[10px] text-gray-400"></p>
+          </div>
+          <button id="vision-clear-file" class="text-gray-400 hover:text-red-400 text-sm p-1">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-bordercol">
+        <button id="cancel-vision-btn" class="px-4 py-2 rounded-lg text-xs font-medium text-gray-400 hover:bg-cardhover transition">Cancel</button>
+        <button id="submit-vision-btn" disabled class="px-4 py-2 rounded-lg text-xs font-medium bg-emerald-500 text-black hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition">
+          Analyze Document
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL 2: MCP TOOLS REGISTRY                                    -->
+  <!-- ============================================================== -->
+  <div id="mcp-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-sidebar border border-bordercol rounded-2xl w-full max-w-2xl p-6 shadow-2xl max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between pb-4 border-b border-bordercol">
+        <div class="flex items-center gap-2.5">
+          <i class="fa-solid fa-network-wired text-purple-400 text-lg"></i>
+          <div>
+            <h3 class="font-semibold text-white text-base">Model Context Protocol (MCP) Registry</h3>
+            <span class="text-[11px] text-gray-400">nexis-unified-mcp &bull; 10 Active Distributed Tools</span>
+          </div>
+        </div>
+        <button id="close-mcp-modal" class="text-gray-400 hover:text-white p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto my-4 space-y-2 pr-1 text-xs">
+        <div class="p-3 rounded-lg bg-[#202020] border border-[#333]">
+          <div class="flex items-center justify-between font-semibold text-emerald-400">
+            <span>get_agri_mandi_prices</span>
+            <span class="text-[10px] text-gray-500 uppercase">Port 8001</span>
+          </div>
+          <p class="text-gray-300 mt-1 text-[11px]">Queries official Agmarknet wholesale prices and calculates distribution statistics.</p>
+        </div>
+
+        <div class="p-3 rounded-lg bg-[#202020] border border-[#333]">
+          <div class="flex items-center justify-between font-semibold text-emerald-400">
+            <span>get_agri_weather_and_advisories</span>
+            <span class="text-[10px] text-gray-500 uppercase">Port 8001</span>
+          </div>
+          <p class="text-gray-300 mt-1 text-[11px]">Retrieves Open-Meteo metrics and calculates operational spraying/irrigation windows.</p>
+        </div>
+
+        <div class="p-3 rounded-lg bg-[#202020] border border-[#333]">
+          <div class="flex items-center justify-between font-semibold text-rose-400">
+            <span>find_nearby_healthcare_facilities</span>
+            <span class="text-[10px] text-gray-500 uppercase">Port 8002</span>
+          </div>
+          <p class="text-gray-300 mt-1 text-[11px]">Queries OpenStreetMap Overpass with Haversine distance for 24/7 trauma & hospitals.</p>
+        </div>
+
+        <div class="p-3 rounded-lg bg-[#202020] border border-[#333]">
+          <div class="flex items-center justify-between font-semibold text-rose-400">
+            <span>verify_medicine_safety_and_precautions</span>
+            <span class="text-[10px] text-gray-500 uppercase">Port 8002</span>
+          </div>
+          <p class="text-gray-300 mt-1 text-[11px]">NIH RxNav molecular active ingredients & OpenFDA clinical warning monographs.</p>
+        </div>
+
+        <div class="p-3 rounded-lg bg-[#202020] border border-[#333]">
+          <div class="flex items-center justify-between font-semibold text-sky-400">
+            <span>search_academic_literature</span>
+            <span class="text-[10px] text-gray-500 uppercase">Port 8003</span>
+          </div>
+          <p class="text-gray-300 mt-1 text-[11px]">Concurrent arXiv preprint XML and OpenLibrary textbook queries.</p>
+        </div>
+
+        <div class="p-3 rounded-lg bg-[#202020] border border-[#333]">
+          <div class="flex items-center justify-between font-semibold text-sky-400">
+            <span>search_youtube_tutorials</span>
+            <span class="text-[10px] text-gray-500 uppercase">Port 8003</span>
+          </div>
+          <p class="text-gray-300 mt-1 text-[11px]">Live verified YouTube video tutorial discovery with authentic watch URLs.</p>
+        </div>
+
+        <div class="p-3 rounded-lg bg-[#202020] border border-[#333]">
+          <div class="flex items-center justify-between font-semibold text-sky-400">
+            <span>search_web_citations</span>
+            <span class="text-[10px] text-gray-500 uppercase">Port 8003</span>
+          </div>
+          <p class="text-gray-300 mt-1 text-[11px]">Tavily API search extracting clean citation cards and verified government circulars.</p>
+        </div>
+
+        <div class="p-3 rounded-lg bg-[#202020] border border-[#333]">
+          <div class="flex items-center justify-between font-semibold text-amber-400">
+            <span>assess_welfare_scheme_eligibility</span>
+            <span class="text-[10px] text-gray-500 uppercase">Port 8004</span>
+          </div>
+          <p class="text-gray-300 mt-1 text-[11px]">Multi-criteria welfare filter (PM-Kisan, PM-JAY) with KYC checklists and privacy redaction.</p>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-bordercol flex justify-between items-center text-[11px] text-gray-400">
+        <span>Ready for Claude Desktop & Cursor via <code>claude_desktop_config.json</code></span>
+        <button id="close-mcp-btn" class="px-4 py-2 rounded-lg text-xs font-medium bg-[#2a2a2a] text-white hover:bg-[#333] transition">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- FRONTEND APPLICATION JAVASCRIPT LOGIC                          -->
+  <!-- ============================================================== -->
+  <script>
+    // --- Application State ---
+    const GATEWAY_BASE = window.location.origin.includes(':8000') 
+      ? window.location.origin 
+      : 'http://127.0.0.1:8000';
+
+    let currentSessionId = null;
+    let chatSessions = [];
+    let userLocation = { lat: null, lon: null };
+    let isThinkingEnabled = false;
+    let isGroundingEnabled = true;
+
+    // --- DOM Elements ---
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const messagesContainer = document.getElementById('messages-container');
+    const heroSection = document.getElementById('hero-section');
+    const chatScroller = document.getElementById('chat-scroller');
+    const typingIndicator = document.getElementById('typing-indicator');
+    const typingStatus = document.getElementById('typing-status');
+    const chatHistoryList = document.getElementById('chat-history-list');
+    const historyEmpty = document.getElementById('history-empty');
+    const newChatBtn = document.getElementById('new-chat-btn');
+    const clearChatsBtn = document.getElementById('clear-chats-btn');
+    const clusterStatusText = document.getElementById('cluster-status-text');
+    const geoStatusText = document.getElementById('geo-status-text');
+    const clusterIndicator = document.getElementById('cluster-indicator');
+    const refreshHealthBtn = document.getElementById('refresh-health-btn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const thinkToggle = document.getElementById('think-toggle');
+    const thinkLabel = document.getElementById('think-label');
+    const webToggle = document.getElementById('web-toggle');
+
+    // Modals
+    const visionModal = document.getElementById('vision-modal');
+    const navVisionBtn = document.getElementById('nav-vision-btn');
+    const attachBtn = document.getElementById('attach-btn');
+    const closeVisionModal = document.getElementById('close-vision-modal');
+    const cancelVisionBtn = document.getElementById('cancel-vision-btn');
+    const visionFileInput = document.getElementById('vision-file-input');
+    const visionPreviewContainer = document.getElementById('vision-preview-container');
+    const visionPreviewImg = document.getElementById('vision-preview-img');
+    const visionFileName = document.getElementById('vision-file-name');
+    const visionFileSize = document.getElementById('vision-file-size');
+    const visionClearFile = document.getElementById('vision-clear-file');
+    const submitVisionBtn = document.getElementById('submit-vision-btn');
+
+    const mcpModal = document.getElementById('mcp-modal');
+    const navMcpBtn = document.getElementById('nav-mcp-btn');
+    const closeMcpModal = document.getElementById('close-mcp-modal');
+    const closeMcpBtn = document.getElementById('close-mcp-btn');
+    const navEduBtn = document.getElementById('nav-edu-btn');
+
+    // --- Redaction Guardrails (Client-side mirror) ---
+    function redactSensitiveIds(text) {
+      if (!text) return '';
+      // 12-digit Indian Aadhaar
+      let sanitized = text.replace(/\b\d{4}\s?\d{4}\s?\d{4}\b/g, '[Aadhaar Redacted]');
+      // Korean RRN
+      sanitized = sanitized.replace(/\b\d{6}-[1-4]\d{6}\b/g, '[ID Redacted]');
+      // MyNumber
+      sanitized = sanitized.replace(/\b(MyNumber|National ID)[:\s]*\d{12}\b/gi, '$1: [ID Redacted]');
+      return sanitized;
+    }
+
+    // --- High-Accuracy Hardware Geolocation Acquisition ---
+    function fetchHighAccuracyPosition() {
+      return new Promise((resolve) => {
+        if (!('geolocation' in navigator)) {
+          geoStatusText.textContent = 'GPS: Not supported';
+          return resolve(null);
+        }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            userLocation.lat = parseFloat(pos.coords.latitude.toFixed(6));
+            userLocation.lon = parseFloat(pos.coords.longitude.toFixed(6));
+            geoStatusText.textContent = `GPS: ${userLocation.lat.toFixed(4)}, ${userLocation.lon.toFixed(4)}`;
+            console.log('High-accuracy GPS fix acquired:', userLocation);
+            resolve(userLocation);
+          },
+          (err) => {
+            console.warn('Geolocation capture warning (falling back to backend IP resolution):', err.message);
+            if (userLocation.lat === null) {
+              geoStatusText.textContent = 'GPS: Regional IP Fallback';
+            }
+            resolve(null);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          }
+        );
+      });
+    }
+
+    function initGeolocation() {
+      fetchHighAccuracyPosition();
+    }
+
+    // --- Cluster Health Probe ---
+    async function checkClusterHealth() {
+      try {
+        const res = await fetch(`${GATEWAY_BASE}/api/system/health`, { method: 'GET' });
+        if (res.ok) {
+          const data = await res.json();
+          const count = data.services_online || '4/4';
+          clusterStatusText.textContent = `Nexis Cluster: ${count} Active`;
+          clusterIndicator.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-indicator';
+        } else {
+          clusterStatusText.textContent = 'Nexis Cluster: Partial';
+          clusterIndicator.className = 'w-2.5 h-2.5 rounded-full bg-amber-500';
+        }
+      } catch (err) {
+        clusterStatusText.textContent = 'Nexis Gateway Offline';
+        clusterIndicator.className = 'w-2.5 h-2.5 rounded-full bg-red-500';
+      }
+    }
+
+    // --- Local Storage Management ---
+    function loadSessions() {
+      try {
+        const stored = localStorage.getItem('nexis_chat_sessions');
+        chatSessions = stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        chatSessions = [];
+      }
+      renderSessionList();
+    }
+
+    function saveSessions() {
+      try {
+        localStorage.setItem('nexis_chat_sessions', JSON.stringify(chatSessions));
+      } catch (e) {
+        console.error('Failed to persist session to LocalStorage:', e);
+      }
+      renderSessionList();
+    }
+
+    function renderSessionList() {
+      chatHistoryList.querySelectorAll('.session-item').forEach(el => el.remove());
+      
+      if (!chatSessions || chatSessions.length === 0) {
+        historyEmpty.style.display = 'block';
+        return;
+      }
+      historyEmpty.style.display = 'none';
+
+      chatSessions.slice().reverse().forEach(session => {
+        const btn = document.createElement('button');
+        btn.className = `session-item w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs transition text-left group ${
+          session.id === currentSessionId ? 'bg-[#2a2a2a] text-white font-medium' : 'text-gray-400 hover:bg-cardhover hover:text-gray-200'
+        }`;
+        btn.innerHTML = `
+          <div class="flex items-center gap-2.5 truncate">
+            <i class="fa-regular fa-message text-[11px] text-gray-500 group-hover:text-gray-400"></i>
+            <span class="truncate">${session.title || 'New Conversation'}</span>
+          </div>
+          <span class="delete-session text-gray-600 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition" title="Delete">
+            <i class="fa-solid fa-xmark text-[10px]"></i>
+          </span>
+        `;
+
+        btn.addEventListener('click', (e) => {
+          if (e.target.closest('.delete-session')) {
+            e.stopPropagation();
+            deleteSession(session.id);
+            return;
+          }
+          loadSessionById(session.id);
+        });
+
+        chatHistoryList.appendChild(btn);
+      });
+    }
+
+    function createNewSession() {
+      currentSessionId = 'session_' + Date.now();
+      const newSession = {
+        id: currentSessionId,
+        title: 'New Conversation',
+        messages: [],
+        timestamp: Date.now()
+      };
+      chatSessions.push(newSession);
+      saveSessions();
+      renderActiveSessionMessages();
+      showHero();
+    }
+
+    function deleteSession(sessionId) {
+      chatSessions = chatSessions.filter(s => s.id !== sessionId);
+      saveSessions();
+      if (currentSessionId === sessionId) {
+        if (chatSessions.length > 0) {
+          loadSessionById(chatSessions[chatSessions.length - 1].id);
+        } else {
+          createNewSession();
+        }
+      }
+    }
+
+    function loadSessionById(sessionId) {
+      currentSessionId = sessionId;
+      renderSessionList();
+      renderActiveSessionMessages();
+    }
+
+    function getCurrentSession() {
+      return chatSessions.find(s => s.id === currentSessionId);
+    }
+
+    // --- Message Rendering ---
+    function showHero() {
+      heroSection.style.display = 'flex';
+      messagesContainer.classList.add('hidden');
+    }
+
+    function hideHero() {
+      heroSection.style.display = 'none';
+      messagesContainer.classList.remove('hidden');
+    }
+
+    function renderActiveSessionMessages() {
+      messagesContainer.innerHTML = '';
+      const session = getCurrentSession();
+      if (!session || !session.messages || session.messages.length === 0) {
+        showHero();
+        return;
+      }
+
+      hideHero();
+      session.messages.forEach(msg => {
+        appendMessageBubbleDOM(msg.role, msg.content, msg.toolsExecuted, false);
+      });
+      scrollToBottom();
+    }
+
+    function appendMessageBubbleDOM(role, content, tools = [], animate = true) {
+      hideHero();
+      const isUser = role === 'user';
+      const cleanContent = redactSensitiveIds(content);
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `w-full flex gap-4 ${isUser ? 'justify-end' : 'justify-start'}`;
+
+      if (isUser) {
+        msgDiv.innerHTML = `
+          <div class="max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-2.5 bg-[#2f2f2f] text-gray-100 text-sm leading-relaxed rounded-br-sm shadow">
+            <div class="whitespace-pre-wrap font-sans">${escapeHtml(cleanContent)}</div>
+          </div>
+        `;
+      } else {
+        // Assistant Message with Icon & Tool Badges
+        const toolsBadgeHtml = (tools && tools.length > 0) ? `
+          <div class="flex flex-wrap gap-1.5 mb-2.5">
+            ${tools.map(t => `
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#1c2e26] text-emerald-400 text-[10px] font-mono border border-emerald-900/60">
+                <i class="fa-solid fa-gear text-[9px]"></i> ${t.tool || 'microservice_call'}
+              </span>
+            `).join('')}
+          </div>
+        ` : '';
+
+        // Parse markdown with marked.js
+        const parsedHtml = marked.parse(cleanContent);
+
+        msgDiv.innerHTML = `
+          <div class="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-black font-bold text-xs shrink-0 mt-1 shadow">
+            <i class="fa-solid fa-bolt-lightning text-[10px]"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            ${toolsBadgeHtml}
+            <div class="prose-content text-gray-200">${parsedHtml}</div>
+          </div>
+        `;
+      }
+
+      messagesContainer.appendChild(msgDiv);
+      scrollToBottom();
+    }
+
+    function scrollToBottom() {
+      chatScroller.scrollTo({
+        top: chatScroller.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // --- Message Dispatching ---
+    async function handleSendMessage(queryText = null) {
+      const text = (queryText || chatInput.value).trim();
+      if (!text) return;
+
+      chatInput.value = '';
+      adjustTextareaHeight();
+
+      let session = getCurrentSession();
+      if (!session) {
+        createNewSession();
+        session = getCurrentSession();
+      }
+
+      // If it's the first message, update session title
+      if (session.messages.length === 0) {
+        session.title = text.slice(0, 32) + (text.length > 32 ? '...' : '');
+        saveSessions();
+      }
+
+      // Add user message to session
+      session.messages.push({ role: 'user', content: text, timestamp: Date.now() });
+      appendMessageBubbleDOM('user', text);
+      saveSessions();
+
+      // Show typing indicator
+      typingIndicator.classList.remove('hidden');
+      sendBtn.disabled = true;
+      scrollToBottom();
+
+      // Ensure fresh high-accuracy hardware coordinates are queried on interaction
+      try {
+        if ('geolocation' in navigator) {
+          await Promise.race([
+            fetchHighAccuracyPosition(),
+            new Promise(r => setTimeout(r, 2000))
+          ]);
+        }
+      } catch (e) {
+        console.warn('Fresh geolocation query warning:', e);
+      }
+
+      // Build payload for Gateway:8000
+      const payload = {
+        query: text,
+        lat: userLocation.lat,
+        lon: userLocation.lon
+      };
+
+      try {
+        const response = await fetch(`${GATEWAY_BASE}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        typingIndicator.classList.add('hidden');
+        sendBtn.disabled = false;
+
+        if (response.ok && data.status === 'success') {
+          if (data.resolved_location && data.resolved_location.formatted) {
+            const locLabel = data.resolved_location.locality || data.resolved_location.formatted;
+            geoStatusText.textContent = `GPS: ${locLabel.length > 24 ? locLabel.slice(0, 22) + '...' : locLabel}`;
+            geoStatusText.title = `Verified Locality: ${data.resolved_location.formatted}`;
+          }
+          const assistantReply = data.response;
+          const toolsExecuted = data.tools_executed || [];
+          session.messages.push({
+            role: 'assistant',
+            content: assistantReply,
+            toolsExecuted: toolsExecuted,
+            timestamp: Date.now()
+          });
+          saveSessions();
+          appendMessageBubbleDOM('assistant', assistantReply, toolsExecuted);
+        } else {
+          const errDetail = data.detail || 'Failed communicating with backend gateway.';
+          const errMsg = `⚠️ **Error from Nexis Gateway:** ${errDetail}\n\n*Please ensure all backend microservices are running via \`./start_servers.sh\`.*`;
+          session.messages.push({ role: 'assistant', content: errMsg, timestamp: Date.now() });
+          saveSessions();
+          appendMessageBubbleDOM('assistant', errMsg);
+        }
+      } catch (err) {
+        typingIndicator.classList.add('hidden');
+        sendBtn.disabled = false;
+        const errMsg = `🚨 **Network Connection Failure:** Could not reach \`${GATEWAY_BASE}/api/chat\`.\n\n*Diagnostics:* ${err.message}`;
+        session.messages.push({ role: 'assistant', content: errMsg, timestamp: Date.now() });
+        saveSessions();
+        appendMessageBubbleDOM('assistant', errMsg);
+      }
+    }
+
+    // --- Vision Document Upload Handling ---
+    let selectedVisionFile = null;
+
+    visionFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      selectedVisionFile = file;
+      visionFileName.textContent = file.name;
+      visionFileSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
+      
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        visionPreviewImg.src = ev.target.result;
+        visionPreviewContainer.classList.remove('hidden');
+        submitVisionBtn.disabled = false;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    visionClearFile.addEventListener('click', () => {
+      selectedVisionFile = null;
+      visionFileInput.value = '';
+      visionPreviewContainer.classList.add('hidden');
+      submitVisionBtn.disabled = true;
+    });
+
+    submitVisionBtn.addEventListener('click', async () => {
+      if (!selectedVisionFile) return;
+
+      visionModal.classList.add('hidden');
+      const formData = new FormData();
+      formData.append('file', selectedVisionFile);
+      formData.append('sector', 'healthcare');
+
+      let session = getCurrentSession();
+      if (!session) {
+        createNewSession();
+        session = getCurrentSession();
+      }
+
+      const userNote = `📎 Uploaded Medical Document: **${selectedVisionFile.name}** for OCR analysis.`;
+      session.messages.push({ role: 'user', content: userNote, timestamp: Date.now() });
+      appendMessageBubbleDOM('user', userNote);
+      saveSessions();
+
+      typingStatus.textContent = 'Nexis Vision is inspecting prescription via OCR...';
+      typingIndicator.classList.remove('hidden');
+      sendBtn.disabled = true;
+      scrollToBottom();
+
+      try {
+        const res = await fetch(`${GATEWAY_BASE}/api/vision`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        typingIndicator.classList.add('hidden');
+        typingStatus.textContent = 'Nexis is querying live distributed microservices...';
+        sendBtn.disabled = false;
+
+        let responseMarkdown = '';
+        if (res.ok && data.status === 'success') {
+          const doc = data.document_analysis;
+          responseMarkdown = `### 📋 Medical Document OCR Summary\n\n` +
+            `* **Extracted Text / Findings:**\n> ${doc.findings_extracted || 'Report processed.'}\n\n` +
+            `* **Flagged Abnormalities:** ${doc.flagged_abnormalities && doc.flagged_abnormalities.length > 0 ? doc.flagged_abnormalities.join(', ') : 'None detected.'}\n\n` +
+            `* **Identified Medications:** ${doc.medications_identified && doc.medications_identified.length > 0 ? doc.medications_identified.join(', ') : 'None detected.'}\n\n` +
+            `* **Clinical Precautions:**\n${doc.clinical_precautions || 'Consult doctor before taking.'}\n\n` +
+            `---\n\n> ⚠️ *${data.emergency_notice || 'Emergency Disclaimer: Nexis AI is an informational tool. Dial 108 immediately for acute emergencies.'}*`;
+        } else {
+          responseMarkdown = `⚠️ **Vision OCR Error:** ${data.detail || 'Could not parse medical document.'}`;
+        }
+
+        session.messages.push({ role: 'assistant', content: responseMarkdown, timestamp: Date.now() });
+        saveSessions();
+        appendMessageBubbleDOM('assistant', responseMarkdown);
+      } catch (err) {
+        typingIndicator.classList.add('hidden');
+        sendBtn.disabled = false;
+        const errMsg = `🚨 **Vision Processing Error:** ${err.message}`;
+        session.messages.push({ role: 'assistant', content: errMsg, timestamp: Date.now() });
+        saveSessions();
+        appendMessageBubbleDOM('assistant', errMsg);
+      }
+    });
+
+    // --- Input Auto-Expansion & Keyboard Shortcuts ---
+    function adjustTextareaHeight() {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 192) + 'px';
+    }
+    chatInput.addEventListener('input', adjustTextareaHeight);
+
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSendMessage();
+      }
+    });
+
+    sendBtn.addEventListener('click', () => handleSendMessage());
+
+    // --- Clickable Hero Suggestion Cards ---
+    document.querySelectorAll('.suggestion-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const prompt = card.getAttribute('data-prompt');
+        if (prompt) {
+          handleSendMessage(prompt);
+        }
+      });
+    });
+
+    // --- Navigation & Toggles ---
+    newChatBtn.addEventListener('click', () => createNewSession());
+    clearChatsBtn.addEventListener('click', () => {
+      if (confirm('Clear all chat sessions from browser storage?')) {
+        chatSessions = [];
+        localStorage.removeItem('nexis_chat_sessions');
+        createNewSession();
+      }
+    });
+
+    refreshHealthBtn.addEventListener('click', () => {
+      clusterStatusText.textContent = 'Probing Nodes...';
+      checkClusterHealth();
+    });
+
+    // Sidebar Collapsible
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('w-64');
+      sidebar.classList.toggle('w-0');
+      sidebar.classList.toggle('overflow-hidden');
+      sidebar.classList.toggle('p-0');
+    });
+
+    // Think Toggle
+    thinkToggle.addEventListener('click', () => {
+      isThinkingEnabled = !isThinkingEnabled;
+      if (isThinkingEnabled) {
+        thinkToggle.classList.add('bg-amber-950/40', 'border-amber-700', 'text-amber-300');
+        thinkLabel.textContent = 'Thinking ON';
+      } else {
+        thinkToggle.classList.remove('bg-amber-950/40', 'border-amber-700', 'text-amber-300');
+        thinkLabel.textContent = 'Think';
+      }
+    });
+
+    // Modals Open/Close
+    const openVision = () => visionModal.classList.remove('hidden');
+    const closeVision = () => visionModal.classList.add('hidden');
+    attachBtn.addEventListener('click', openVision);
+    navVisionBtn.addEventListener('click', openVision);
+    closeVisionModal.addEventListener('click', closeVision);
+    cancelVisionBtn.addEventListener('click', closeVision);
+
+    const openMcp = () => mcpModal.classList.remove('hidden');
+    const closeMcp = () => mcpModal.classList.add('hidden');
+    navMcpBtn.addEventListener('click', openMcp);
+    closeMcpModal.addEventListener('click', closeMcp);
+    closeMcpBtn.addEventListener('click', closeMcp);
+
+    navEduBtn.addEventListener('click', () => {
+      handleSendMessage('Find open-access computer science textbooks and arXiv papers on distributed systems');
+    });
+
+    // Voice Dictation Mock / Speech API
+    const micBtn = document.getElementById('mic-btn');
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognizer = new SpeechRecognition();
+      recognizer.lang = 'en-US';
+      recognizer.interimResults = false;
+
+      recognizer.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        chatInput.value = (chatInput.value ? chatInput.value + ' ' : '') + transcript;
+        adjustTextareaHeight();
+        micBtn.classList.remove('text-red-400');
+      };
+      recognizer.onerror = () => micBtn.classList.remove('text-red-400');
+      recognizer.onend = () => micBtn.classList.remove('text-red-400');
+
+      micBtn.addEventListener('click', () => {
+        try {
+          micBtn.classList.add('text-red-400');
+          recognizer.start();
+        } catch (e) {
+          recognizer.stop();
+          micBtn.classList.remove('text-red-400');
+        }
+      });
+    } else {
+      micBtn.title = 'Speech dictation not supported in current browser';
+    }
+
+    // --- App Bootstrap ---
+    window.addEventListener('DOMContentLoaded', () => {
+      initGeolocation();
+      checkClusterHealth();
+      loadSessions();
+
+      // If no sessions, create clean initial state
+      if (!chatSessions || chatSessions.length === 0) {
+        createNewSession();
+      } else {
+        currentSessionId = chatSessions[chatSessions.length - 1].id;
+        renderActiveSessionMessages();
+      }
+
+      // Check health periodically every 45s
+      setInterval(checkClusterHealth, 45000);
+    });
+  </script>
+</body>
+</html>
