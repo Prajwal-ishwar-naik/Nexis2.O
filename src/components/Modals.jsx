@@ -84,7 +84,7 @@ export function VisionModal({ isOpen, onClose, onUploadComplete }) {
           </p>
 
           <label className="border-2 border-dashed border-[#383838] hover:border-purple-500/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors bg-[#181818]">
-            <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+            <input type="file" accept="image/png, image/jpeg, image/webp" onChange={handleFileChange} className="hidden" />
             {preview ? (
               <img src={preview} alt="Preview" className="max-h-40 object-contain rounded-lg shadow" />
             ) : (

@@ -12,7 +12,7 @@ const MODELS = [
     border: 'border-amber-500/20',
   },
   {
-    id: 'deep',
+    id: 'deep_reasoning',
     name: 'Nexis Deep Reasoning',
     subtext: 'DeepSeek-R1 • Step-by-step logic',
     icon: Brain,
@@ -26,7 +26,12 @@ export function ModelSelector({ activeModel = 'fast', onSelectModel }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  const current = MODELS.find((m) => m.id === activeModel) || MODELS[0];
+  const current =
+    MODELS.find(
+      (m) =>
+        m.id === activeModel ||
+        (m.id === 'deep_reasoning' && (activeModel === 'deep' || activeModel === 'deep_reasoning'))
+    ) || MODELS[0];
   const CurrentIcon = current.icon;
 
   // Click outside to close
@@ -80,7 +85,9 @@ export function ModelSelector({ activeModel = 'fast', onSelectModel }) {
 
           <div className="space-y-1">
             {MODELS.map((model) => {
-              const isSelected = model.id === activeModel;
+              const isSelected =
+                model.id === activeModel ||
+                (model.id === 'deep_reasoning' && (activeModel === 'deep' || activeModel === 'deep_reasoning'));
               const Icon = model.icon;
               return (
                 <button

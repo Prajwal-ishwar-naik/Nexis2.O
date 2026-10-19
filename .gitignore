@@ -52,3 +52,10 @@ Thumbs.db
 
 # External cloned repositories
 spark-studio/
+
+# Runtime, logs & temporary data
+*.log
+*.db
+*.sqlite3
+temp_uploads/
+data/

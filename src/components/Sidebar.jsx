@@ -17,13 +17,27 @@ import {
 import { NexisLogo } from './NexisLogo';
 
 export function Sidebar({
+  // Modern session/chat scoped props
+  allChats = [],
+  activeSessionId,
+  activeChatId,
+  sessionProfiles = [],
+  onSelectChat,
+  onDeleteChat,
+  onRenameChat,
+  onDuplicateChat,
+  onSwitchSession,
+  onAddNewSession,
+  // Backwards compatibility props
   sessions = [],
   currentSessionId,
   onSelectSession,
-  onNewChat,
   onDeleteSession,
   onRenameSession,
   onDuplicateSession,
+  onSwitchProfile,
+  // UI Actions & Modals
+  onNewChat,
   onOpenVisionModal,
   onOpenEduModal,
   onOpenMcpModal,
@@ -36,7 +50,6 @@ export function Sidebar({
   onToggleSidebar,
   activeMode = 'assistant',
   onSelectMode,
-  onSwitchProfile,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
@@ -47,16 +60,30 @@ export function Sidebar({
 
   const fileInputRef = useRef(null);
   const recentsContainerRef = useRef(null);
-  const prevSessionsCount = useRef(sessions.length);
   const menuRef = useRef(null);
 
-  // Auto-scroll to top when a new session is created
+  // Normalized handlers & state
+  const chatsList = Array.isArray(allChats) && (allChats.length > 0 || !sessions || sessions.length === 0)
+    ? allChats
+    : (sessions || []);
+  const currentChatId = activeChatId || currentSessionId;
+  const selectChatHandler = onSelectChat || onSelectSession;
+  const deleteChatHandler = onDeleteChat || onDeleteSession;
+  const renameChatHandler = onRenameChat || onRenameSession;
+  const duplicateChatHandler = onDuplicateChat || onDuplicateSession;
+
+  // Layer 2 Isolation: Strictly filter chats by activeSessionId
+  const visibleChats = chatsList.filter((chat) => chat.sessionId === activeSessionId);
+
+  const prevChatsCount = useRef(visibleChats.length);
+
+  // Auto-scroll to top when a new chat is created in the active session
   useEffect(() => {
-    if (sessions.length > prevSessionsCount.current) {
+    if (visibleChats.length > prevChatsCount.current) {
       recentsContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    prevSessionsCount.current = sessions.length;
-  }, [sessions.length]);
+    prevChatsCount.current = visibleChats.length;
+  }, [visibleChats.length]);
 
   // Click outside to close 3-dot menu
   useEffect(() => {
@@ -83,8 +110,8 @@ export function Sidebar({
 
   const handleSaveRename = (sessId) => {
     const trimmed = editTitle.trim();
-    if (trimmed && onRenameSession) {
-      onRenameSession(sessId, trimmed);
+    if (trimmed && renameChatHandler) {
+      renameChatHandler(sessId, trimmed);
     }
     setEditingSessionId(null);
   };
@@ -92,23 +119,23 @@ export function Sidebar({
   const handleDuplicate = (sessId, e) => {
     e?.stopPropagation();
     setActiveMenuSessionId(null);
-    if (onDuplicateSession) {
-      onDuplicateSession(sessId);
+    if (duplicateChatHandler) {
+      duplicateChatHandler(sessId);
     }
   };
 
   const handleDelete = (sessId, e) => {
     e?.stopPropagation();
-    if (onDeleteSession) {
-      onDeleteSession(sessId);
+    if (deleteChatHandler) {
+      deleteChatHandler(sessId);
     }
     setActiveMenuSessionId(null);
     setConfirmDeleteId(null);
   };
 
-  const filteredSessions = sessions.filter((s) => {
+  const filteredChats = visibleChats.filter((c) => {
     if (!searchQuery.trim()) return true;
-    return (s.title || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return (c.title || '').toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   return (
@@ -184,7 +211,7 @@ export function Sidebar({
               onOpenVisionModal(file);
             }
           }}
-          accept="image/*,.pdf"
+          accept="image/*,.pdf,.docx,.pptx,.xlsx,.csv,.txt"
           className="hidden"
         />
 
@@ -286,7 +313,7 @@ export function Sidebar({
             Recent
           </div>
 
-          {filteredSessions.length === 0 ? (
+          {filteredChats.length === 0 ? (
             <div className="px-3 py-5 text-center text-[#8e918f] text-xs">
               <p className="font-normal text-[#c4c7c5] mb-0.5">
                 {searchQuery ? 'No matching chats' : 'No recent chats'}
@@ -296,8 +323,8 @@ export function Sidebar({
               </p>
             </div>
           ) : (
-            filteredSessions.map((sess) => {
-              const isActive = sess.id === currentSessionId;
+            filteredChats.map((sess) => {
+              const isActive = sess.id === currentChatId;
               const isEditing = editingSessionId === sess.id;
               const isMenuOpen = activeMenuSessionId === sess.id;
               const isConfirmingDelete = confirmDeleteId === sess.id;
@@ -306,7 +333,7 @@ export function Sidebar({
                 <div
                   key={sess.id}
                   onClick={() => {
-                    if (!isEditing) onSelectSession(sess.id);
+                    if (!isEditing && selectChatHandler) selectChatHandler(sess.id);
                   }}
                   className={`group relative flex items-center justify-between px-3 py-2 rounded-full cursor-pointer text-xs font-normal transition-all ${
                     isActive
@@ -424,7 +451,13 @@ export function Sidebar({
         </div>
 
         {/* Workspace / Multi-Profile Session Switcher Footer */}
-        <SidebarFooter onSwitchProfile={onSwitchProfile} />
+        <SidebarFooter
+          sessionProfiles={sessionProfiles}
+          activeSessionId={activeSessionId}
+          onSwitchSession={onSwitchSession}
+          onAddNewSession={onAddNewSession}
+          onSwitchProfile={onSwitchProfile}
+        />
       </aside>
     </>
   );
@@ -433,33 +466,28 @@ export function Sidebar({
 /**
  * Clean Workspace / Multi-Profile Session Switcher Footer
  */
-export function SidebarFooter({ onSwitchProfile }) {
+export function SidebarFooter({
+  sessionProfiles = [],
+  activeSessionId,
+  onSwitchSession,
+  onAddNewSession,
+  onSwitchProfile,
+}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const [newSessionName, setNewSessionName] = useState('');
-  const [profiles, setProfiles] = useState(() => {
-    try {
-      const saved = localStorage.getItem('nexis_user_profiles');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
-    }
-    return [
-      { id: '1', name: 'Prajwal Naik', initial: 'P', active: true },
-      { id: '2', name: 'Academic Research', initial: 'A', active: false },
-    ];
-  });
-
   const menuRef = useRef(null);
 
-  // Sync profiles to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('nexis_user_profiles', JSON.stringify(profiles));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [profiles]);
+  // If sessionProfiles provided from parent App.jsx, use it; otherwise fallback to default
+  const profiles = sessionProfiles.length > 0 ? sessionProfiles : [
+    { id: '1', name: 'Prajwal Naik', initial: 'P', active: true },
+    { id: '2', name: 'Academic Research', initial: 'A', active: false },
+  ];
+
+  const activeProfile = profiles.find((p) => p.id === activeSessionId)
+    || profiles.find((p) => p.active)
+    || profiles[0]
+    || { id: '1', name: 'Prajwal Naik', initial: 'P' };
 
   // Click outside listener to close popup and reset inline input
   useEffect(() => {
@@ -478,30 +506,28 @@ export function SidebarFooter({ onSwitchProfile }) {
     };
   }, [isMenuOpen]);
 
-  const activeProfile = profiles.find((p) => p.active) || profiles[0];
-
   const handleSelect = (id) => {
-    setProfiles((prev) => prev.map((p) => ({ ...p, active: p.id === id })));
     setIsMenuOpen(false);
     setIsCreatingSession(false);
     setNewSessionName('');
-    if (onSwitchProfile) onSwitchProfile(id);
+    if (onSwitchSession) {
+      onSwitchSession(id);
+    } else if (onSwitchProfile) {
+      onSwitchProfile(id);
+    }
   };
 
   const handleConfirmCreate = () => {
     const trimmed = newSessionName.trim();
     if (!trimmed) return;
-    const newP = {
-      id: Date.now().toString(),
-      name: trimmed,
-      initial: trimmed.charAt(0).toUpperCase(),
-      active: true,
-    };
-    setProfiles((prev) => [...prev.map((p) => ({ ...p, active: false })), newP]);
     setIsCreatingSession(false);
     setNewSessionName('');
     setIsMenuOpen(false);
-    if (onSwitchProfile) onSwitchProfile(newP.id);
+    if (onAddNewSession) {
+      onAddNewSession(trimmed);
+    } else if (onSwitchProfile) {
+      onSwitchProfile(trimmed);
+    }
   };
 
   return (
@@ -547,7 +573,7 @@ export function SidebarFooter({ onSwitchProfile }) {
                 </div>
                 <span className="truncate">{p.name}</span>
               </div>
-              {p.active && <Check className="text-blue-400 shrink-0" size={14} />}
+              {p.id === activeProfile.id && <Check className="text-blue-400 shrink-0" size={14} />}
             </button>
           ))}
 

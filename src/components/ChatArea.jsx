@@ -12,6 +12,7 @@ import {
   Brain,
   ThumbsUp,
   ThumbsDown,
+  RotateCcw,
 } from 'lucide-react';
 import { NexisLogo } from './NexisLogo';
 import { VideoCardGrid } from './VideoCard';
@@ -42,7 +43,7 @@ export function ChatArea({
       ) : (
         <div className="w-full max-w-4xl mx-auto px-4 py-4 space-y-6">
           {messages.map((msg, idx) => (
-            <MessageRow key={idx} message={msg} />
+            <MessageRow key={idx} message={msg} onRetry={onSelectSuggestion} />
           ))}
 
           {/* Modern Gemini Shimmer Stream Skeleton */}
@@ -211,13 +212,15 @@ function ThinkingAccordion({ thinking }) {
 /**
  * Individual message row with markdown rendering and tools executed pills
  */
-function MessageRow({ message }) {
+function MessageRow({ message, onRetry }) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
   const [rating, setRating] = useState(null);
-  const { thinking, body } = !isUser
+  const extracted = !isUser
     ? extractThinkingProcess(message.content)
     : { thinking: null, body: message.content };
+  const thinking = message.thought_trace || extracted.thinking;
+  const body = message.thought_trace ? message.content : extracted.body;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
@@ -244,6 +247,14 @@ function MessageRow({ message }) {
     );
   }
 
+  const isErrorMessage = Boolean(
+    message.isError ||
+    message.failedQuery ||
+    message.content?.includes("Connection Offline") ||
+    message.content?.includes("Gateway Processing Error") ||
+    message.content?.includes("Error communicating with Nexis Gateway")
+  );
+
   return (
     <div className="flex gap-4 w-full justify-start items-start animate-fade-in-up group">
       <div className="w-8 h-8 rounded-full bg-[#1e1f20] border border-[#2d2f31] flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
@@ -257,6 +268,21 @@ function MessageRow({ message }) {
             {body}
           </ReactMarkdown>
         </div>
+
+        {/* Actionable Retry Trigger on Connection Offline or Server Error */}
+        {isErrorMessage && onRetry && (
+          <div className="pt-0.5">
+            <button
+              type="button"
+              onClick={() => onRetry(message.failedQuery || 'Retry sending query')}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 hover:text-amber-200 text-xs font-medium transition-all cursor-pointer shadow-sm"
+              title="Retry sending message to Nexis Gateway"
+            >
+              <RotateCcw size={12} />
+              <span>Retry Request</span>
+            </button>
+          </div>
+        )}
 
         {/* Action bar with Copy and Feedback micro-interactions */}
         <div className="flex items-center gap-1.5 pt-1 opacity-90 md:opacity-0 group-hover:opacity-100 transition-opacity duration-200">

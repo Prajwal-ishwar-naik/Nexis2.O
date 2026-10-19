@@ -1,0 +1,39 @@
+Here are direct prompts ready to copy and test inside your chat interface:
+
+---
+
+Real-Time Live Queries
+
+* "What is the modal price of hybrid tomato in APMC Kolar today, and is there any rain forecast for the area?"
+* "Find government multi-specialty hospitals near Jayanagar Bangalore with their distances, and check if Metformin has any FDA interaction warnings."
+* "Summarize the top 2 recent research papers on Corrective RAG and suggest textbook references on Information Retrieval."
+* "What are the eligibility criteria and documents required for the PM-Kisan scheme for a small farmer in Karnataka?"
+
+---
+
+### Document & File Testing
+
+*(Attach a PDF, DOCX, or Excel file first, then run these)*
+
+* "whats this telling"
+* "Give me the complete record and status for Prajwal Naik."
+* "Is Prajwal Nai on the list?"
+* "What is the total expenditure across Ward 12, and which item had the highest cost?"
+* "What are the submission deadlines and evaluation criteria mentioned in Section 3?"
+
+---
+
+### Behavior & Tone Adaptation
+
+* "kolar tomato rate fast"
+* "Compare PM-Kisan vs Raitha Vidyanidhi scheme benefits."
+* "broooo not getting how cross encoder works explain simply"
+* "Kolar alli tomato bele enu bro eega?"
+
+---
+
+### Multi-Turn Context & Redaction
+
+* **Turn 1:** "I am a paddy farmer from Mandya holding 2.5 acres of land."
+**Turn 2:** "Which state government subsidy suits my farm best?"
+* "Here are my registration details: Name: Ramesh, Phone: 9876543210, Aadhaar: 2345 6789 0123. Draft a formal scheme application for me."

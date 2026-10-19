@@ -327,7 +327,7 @@ async def verify_medicine(name: str = Query(..., min_length=2, description="Chem
 async def analyze_prescription(file: UploadFile = File(...)) -> Dict[str, Any]:
     """
     Accepts medical documents via UploadFile (prescriptions, pathology reports, imaging summaries).
-    Dispatches to Groq Vision (llama-3.2-11b-vision-preview) or local Ollama (llama3.2-vision:latest)
+    Dispatches to Groq Vision (meta-llama/llama-4-scout-17b-16e-instruct) or local Ollama (llama3.2-vision:latest)
     based on INFERENCE_PROVIDER.
     Extracts parameters, flagged values (High/Low), and medicine names.
     Appends mandatory safety disclaimer and redacts sensitive ID digits.
@@ -390,22 +390,39 @@ async def analyze_prescription(file: UploadFile = File(...)) -> Dict[str, Any]:
             if active_key and active_key != "your_groq_api_key_here":
                 from groq import AsyncGroq
                 groq_client = AsyncGroq(api_key=active_key)
-                response = await groq_client.chat.completions.create(
-                    model=GROQ_VISION_MODEL,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": prompt},
-                                {"type": "image_url", "image_url": {"url": data_url}}
-                            ]
-                        }
-                    ],
-                    temperature=0.1,
-                    max_tokens=1024
-                )
-                raw_text = response.choices[0].message.content or "{}"
-                provider_used = f"groq ({GROQ_VISION_MODEL})"
+                candidates = [
+                    GROQ_VISION_MODEL,
+                    "qwen/qwen3.8-27b",
+                ]
+                last_g_exc = None
+                for vm in candidates:
+                    try:
+                        logger.info(f"Invoking Groq Vision for prescription OCR: {vm}")
+                        response = await groq_client.chat.completions.create(
+                            model=vm,
+                            messages=[
+                                {
+                                    "role": "user",
+                                    "content": [
+                                        {"type": "text", "text": prompt},
+                                        {"type": "image_url", "image_url": {"url": data_url}}
+                                    ]
+                                }
+                            ],
+                            temperature=0.1,
+                            max_tokens=1024
+                        )
+                        raw_text = response.choices[0].message.content or "{}"
+                        provider_used = f"groq ({vm})"
+                        break
+                    except Exception as vexc:
+                        last_g_exc = vexc
+                        logger.warning(f"Groq Vision {vm} failed: {vexc}")
+                if not raw_text or raw_text == "{}":
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail=f"Both Ollama and Groq Vision failed: {last_g_exc}"
+                    )
             else:
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
@@ -424,27 +441,86 @@ async def analyze_prescription(file: UploadFile = File(...)) -> Dict[str, Any]:
         from groq import AsyncGroq
         groq_client = AsyncGroq(api_key=active_key)
 
-        try:
-            response = await groq_client.chat.completions.create(
-                model=GROQ_VISION_MODEL,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {"url": data_url}}
-                        ]
-                    }
-                ],
-                temperature=0.1,
-                max_tokens=1024
-            )
-            raw_text = response.choices[0].message.content or "{}"
-            provider_used = f"groq ({GROQ_VISION_MODEL})"
-        except Exception as exc:
+        candidates = [
+            GROQ_VISION_MODEL,
+            "qwen/qwen3.8-27b",
+        ]
+        last_g_exc = None
+        for vm in candidates:
+            try:
+                logger.info(f"Invoking Groq Vision for prescription OCR: {vm}")
+                response = await groq_client.chat.completions.create(
+                    model=vm,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": {"url": data_url}}
+                            ]
+                        }
+                    ],
+                    temperature=0.1,
+                    max_tokens=1024
+                )
+                raw_text = response.choices[0].message.content or "{}"
+                provider_used = f"groq ({vm})"
+                break
+            except Exception as exc:
+                last_g_exc = exc
+                err_str = str(exc).lower()
+                logger.warning(f"Groq Vision {vm} failed: {exc}")
+                if "404" in err_str or "model_not_found" in err_str or "decommissioned" in err_str or "not supported" in err_str:
+                    continue
+
+        if not raw_text or raw_text == "{}":
+            # Attempt high-accuracy local OCR fallback
+            try:
+                import io, re, shutil
+                import pytesseract
+                from PIL import Image
+
+                tess_bin = shutil.which("tesseract") or "/opt/homebrew/bin/tesseract" or "/usr/local/bin/tesseract"
+                if tess_bin and os.path.exists(tess_bin):
+                    pytesseract.pytesseract.tesseract_cmd = tess_bin
+
+                match = re.match(r"^data:(?:image\/[a-zA-Z0-9\+\-\.]+)?;base64,(.+)$", data_url, re.DOTALL)
+                b64_data = match.group(1) if match else data_url
+                img_bytes = base64.b64decode(b64_data)
+                img = Image.open(io.BytesIO(img_bytes))
+                ocr_text = pytesseract.image_to_string(img).strip()
+
+                if ocr_text and len(ocr_text) > 3:
+                    logger.info(f"Groq Vision exhausted. Extracted {len(ocr_text)} chars from prescription via local OCR; parsing with text model.")
+                    text_models = [os.getenv("GROQ_ORCHESTRATOR_MODEL", "openai/gpt-oss-120b"), "openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b"]
+                    seen_tm = set()
+                    for tm in text_models:
+                        if not tm or tm in seen_tm:
+                            continue
+                        seen_tm.add(tm)
+                        try:
+                            ocr_res = await groq_client.chat.completions.create(
+                                model=tm,
+                                messages=[
+                                    {"role": "system", "content": prompt},
+                                    {"role": "user", "content": f"Here is the clinical text extracted from the prescription image via OCR:\n\"\"\"\n{ocr_text}\n\"\"\"\nStructure the JSON strictly according to the requested schema."}
+                                ],
+                                temperature=0.1,
+                                max_tokens=1024
+                            )
+                            raw_text = ocr_res.choices[0].message.content or "{}"
+                            if raw_text and raw_text != "{}":
+                                provider_used = f"groq-text ({tm}, ocr-fallback)"
+                                break
+                        except Exception as m_err:
+                            logger.warning(f"Health OCR text model {tm} failed: {m_err}")
+            except Exception as ocr_err:
+                logger.error(f"Health OCR fallback parsing failed: {ocr_err}")
+
+        if not raw_text or raw_text == "{}":
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=f"Groq Vision prescription analysis failed: {str(exc)}"
+                detail=f"Groq Vision prescription analysis failed across all candidate models: {str(last_g_exc)}"
             )
 
     clean_text = raw_text.strip()

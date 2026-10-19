@@ -9,18 +9,15 @@ import os
 import sys
 from fastmcp import FastMCP
 
-# Ensure root workspace is on sys.path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-# Import individual MCP servers
 from agri_mcp import mcp as agri_mcp
 from health_mcp import mcp as health_mcp
 from edu_mcp import mcp as edu_mcp
 from civic_mcp import mcp as civic_mcp
 
-# Initialize Unified FastMCP Hub
 unified_mcp = FastMCP(
     name="nexis-unified-mcp",
     instructions=(

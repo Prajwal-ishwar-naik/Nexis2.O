@@ -9,7 +9,11 @@ import {
   Check,
   X,
   FileImage,
+  FileText,
+  Loader2,
+  CheckCircle2,
 } from 'lucide-react';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 export function InputDeck({
   onSendMessage,
@@ -20,22 +24,51 @@ export function InputDeck({
   prefillPrompt = '',
   attachedImage = null,
   onClearAttachedImage,
+  sessionId = 'default',
+  activeChatId = null,
+  onEnsureActiveChat = null,
 }) {
   const [text, setText] = useState('');
-  const [selectedImageBase64, setSelectedImageBase64] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
   const [selectedImageName, setSelectedImageName] = useState('');
+  const [uploadingDoc, setUploadingDoc] = useState(null);
+  const [attachedDoc, setAttachedDoc] = useState(null);
+  const [indexedDocs, setIndexedDocs] = useState([]);
   const [isModelMenuOpen, setIsModelMenuOpen] = useState(false);
   const textareaRef = useRef(null);
   const modelMenuRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const isThinkActive = activeModel === 'deep';
+  const isThinkActive = activeModel === 'deep_reasoning' || activeModel === 'deep';
+  const baseTextOnStartRef = useRef('');
+
+  const {
+    isListening,
+    isSupported,
+    errorMessage: speechError,
+    clearError: clearSpeechError,
+    toggle: toggleSpeechRecognition,
+    stop: stopSpeechRecognition,
+  } = useSpeechRecognition({
+    onTranscript: (transcript) => {
+      const base = baseTextOnStartRef.current;
+      const combined = base ? `${base} ${transcript}` : transcript;
+      setText(combined);
+    },
+  });
+
+  const handleMicClick = () => {
+    if (!isListening) {
+      baseTextOnStartRef.current = text.trim();
+    }
+    toggleSpeechRecognition();
+  };
 
   // React to externally passed image attachment (e.g. from Sidebar or Drag & Drop)
   useEffect(() => {
     if (attachedImage) {
       if (typeof attachedImage === 'string') {
-        setSelectedImageBase64(attachedImage);
+        setSelectedImage(attachedImage);
         setSelectedImageName('Attached Image');
       } else if (attachedImage instanceof File) {
         handleImageUpload(attachedImage);
@@ -80,25 +113,120 @@ export function InputDeck({
     };
   }, [isModelMenuOpen]);
 
-  // Convert File to clean Base64 Data URI
+  // Convert File to clean Base64 Data URL (data:image/jpeg;base64,...) with auto-scaling to prevent pixel limit errors
   const handleImageUpload = (file) => {
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setSelectedImageBase64(reader.result);
-      setSelectedImageName(file.name || 'image.png');
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 2048;
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        setSelectedImage(optimizedDataUrl);
+        setSelectedImageName(file.name || 'image.jpg');
+      };
+      img.onerror = () => {
+        setSelectedImage(e.target.result);
+        setSelectedImageName(file.name || 'image.jpg');
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   };
 
   const handleClearImage = () => {
-    setSelectedImageBase64(null);
+    setSelectedImage(null);
     setSelectedImageName('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
     if (onClearAttachedImage) {
       onClearAttachedImage();
+    }
+  };
+
+  // When file is picked:
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    const currentChatId = (onEnsureActiveChat ? onEnsureActiveChat() : null) || activeChatId || sessionId || 'default';
+    setUploadingDoc({ name: file.name, status: 'indexing' });
+    setAttachedDoc({ filename: file.name, ready: false });
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('session_id', currentChatId); // MUST match chat_id passed to /api/chat
+
+      const res = await fetch('http://127.0.0.1:8000/api/rag/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        const docRecord = {
+          filename: file.name,
+          filePath: data.file_path || file.name,
+          ready: true,
+          count: data.chunks_indexed,
+        };
+        setAttachedDoc(docRecord);
+        setUploadingDoc({
+          name: file.name,
+          status: 'ready',
+          count: data.chunks_indexed,
+        });
+        setIndexedDocs((prev) => [...prev, file.name]);
+      } else {
+        setAttachedDoc(null);
+        setUploadingDoc({
+          name: file.name,
+          status: 'error',
+          error: data.detail || 'Indexing failed',
+        });
+      }
+    } catch (err) {
+      setAttachedDoc(null);
+      setUploadingDoc({
+        name: file.name,
+        status: 'error',
+        error: err.message,
+      });
+    }
+  };
+
+  const handleDocumentUpload = handleFileUpload;
+
+  const handleRemoveDoc = () => {
+    setAttachedDoc(null);
+    setUploadingDoc(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileSelection = (file) => {
+    if (!file) return;
+    const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp)$/i.test(file.name);
+    if (isImage) {
+      handleImageUpload(file);
+    } else {
+      handleFileUpload(file);
     }
   };
 
@@ -110,21 +238,45 @@ export function InputDeck({
   };
 
   const handleSubmit = () => {
+    if (isListening) {
+      stopSpeechRecognition();
+    }
     const trimmed = text.trim();
-    if ((!trimmed && !selectedImageBase64) || isLoading) return;
+    if ((!trimmed && !selectedImage && !attachedDoc) || isLoading) return;
 
     let queryToSend = trimmed;
-    if (!queryToSend && selectedImageBase64) {
-      queryToSend = 'Inspect and analyze this image in detail.';
+    if (!queryToSend && selectedImage) {
+      queryToSend = 'Analyze and describe this image in detail.';
+    } else if (!queryToSend && attachedDoc) {
+      queryToSend = `Summarize and explain the key findings in ${attachedDoc.filename}.`;
     }
 
     if (isThinkActive && !queryToSend.includes('[Deep Reasoning Mode]')) {
       queryToSend = `[Deep Reasoning Mode] ${queryToSend}`;
     }
 
-    onSendMessage(queryToSend, isThinkActive, selectedImageBase64);
+    // Capture attached document details before any state changes
+    const activeDocPayload = attachedDoc ? {
+      filename: attachedDoc.filename,
+      filePath: attachedDoc.filePath || attachedDoc.filename,
+    } : null;
+
+    // Never send image if document is attached to avoid accidental vision token consumption
+    const imageToSend = activeDocPayload ? null : selectedImage;
+
+    onSendMessage(
+      queryToSend,
+      isThinkActive,
+      imageToSend,
+      activeDocPayload ? 'llama-3.3-70b-versatile' : (isThinkActive ? 'deep_reasoning' : 'fast'),
+      activeDocPayload
+    );
+
+    // Clear text prompt and any standalone image, but preserve attachedDoc so follow-ups work
     setText('');
-    handleClearImage();
+    if (!attachedDoc) {
+      handleClearImage();
+    }
 
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -180,7 +332,7 @@ export function InputDeck({
             {/* Nexis Deep Reasoning Option */}
             <button
               type="button"
-              onClick={() => handleSelectModel('deep')}
+              onClick={() => handleSelectModel('deep_reasoning')}
               className={`w-full flex items-start gap-3 p-2 rounded-xl text-left transition-all cursor-pointer ${
                 isThinkActive
                   ? 'bg-[#282a2c] text-white'
@@ -206,12 +358,52 @@ export function InputDeck({
         </div>
       )}
 
+      {/* Speech Recognition Error Notice */}
+      {speechError && (
+        <div className="mb-2.5 flex items-center justify-between gap-2.5 px-3.5 py-2 bg-rose-950/70 border border-rose-500/40 text-rose-200 text-xs rounded-xl shadow-lg animate-fade-in-up">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">⚠️</span>
+            <p className="leading-snug">{speechError}</p>
+          </div>
+          <button
+            type="button"
+            onClick={clearSpeechError}
+            className="p-1 hover:text-white rounded-full transition-colors cursor-pointer shrink-0"
+            title="Dismiss notice"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
+
+      {/* Active Voice Listening Pill */}
+      {isListening && (
+        <div className="mb-2.5 flex items-center justify-between gap-3 px-3.5 py-1.5 bg-[#1e1f20] border border-rose-500/40 rounded-full w-fit max-w-sm shadow-xl animate-fade-in-up">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+            </span>
+            <span className="text-xs font-medium text-rose-300">
+              Listening to voice... Speak now
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={stopSpeechRecognition}
+            className="text-[11px] text-[#8e918f] hover:text-white underline cursor-pointer"
+          >
+            Done
+          </button>
+        </div>
+      )}
+
       {/* Attached Image Preview Pill */}
-      {selectedImageBase64 && (
+      {selectedImage && (
         <div className="mb-2.5 flex items-center gap-3 px-3 py-2 bg-[#1e1f20] border border-[#2d2f31] rounded-2xl w-fit max-w-sm shadow-xl animate-fade-in-up">
           <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-black/40 border border-[#3f4144] shrink-0 flex items-center justify-center">
             <img
-              src={selectedImageBase64}
+              src={selectedImage}
               alt="Attached thumbnail"
               className="w-full h-full object-cover"
             />
@@ -236,15 +428,56 @@ export function InputDeck({
         </div>
       )}
 
-      {/* Hidden File Input for Native Image Ingestion */}
+      {/* Document Upload Progress / Ready Pill */}
+      {uploadingDoc && (
+        <div className="mb-2.5 flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-variant border border-border-subtle text-xs text-text-primary shadow-lg w-fit max-w-sm animate-fade-in-up">
+          {uploadingDoc.status === 'indexing' && (
+            <>
+              <Loader2 size={13} className="text-[#4da2ff] animate-spin shrink-0" />
+              <span className="truncate max-w-[220px] font-medium">{uploadingDoc.name}</span>
+              <span className="text-[11px] text-text-muted shrink-0">(indexing...)</span>
+            </>
+          )}
+
+          {uploadingDoc.status === 'ready' && (
+            <>
+              <span className="text-emerald-400">●</span>
+              <span className="truncate max-w-[220px] font-medium">{uploadingDoc.name}</span>
+              <button 
+                onClick={handleRemoveDoc} 
+                className="text-text-muted hover:text-text-primary transition-colors ml-1"
+                aria-label="Remove document"
+              >
+                ×
+              </button>
+            </>
+          )}
+
+          {uploadingDoc.status === 'error' && (
+            <>
+              <span className="text-rose-400">●</span>
+              <span className="truncate max-w-[220px] text-rose-300 font-medium">{uploadingDoc.name}</span>
+              <button 
+                onClick={handleRemoveDoc} 
+                className="text-text-muted hover:text-text-primary transition-colors ml-1"
+                aria-label="Remove document"
+              >
+                ×
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Hidden File Input for Image & Multi-format Document Ingestion */}
       <input
         type="file"
         ref={fileInputRef}
-        accept="image/*"
+        accept="image/*,.pdf,.docx,.pptx,.xlsx,.csv,.txt"
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) {
-            handleImageUpload(file);
+            handleFileSelection(file);
           }
         }}
         className="hidden"
@@ -256,7 +489,7 @@ export function InputDeck({
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          title="Attach image for vision inspection"
+          title="Attach document (.pdf, .docx, .pptx, .xlsx, .csv, .txt) or image"
           className="w-8 h-8 rounded-full flex items-center justify-center text-[#c4c7c5] hover:text-white hover:bg-[#282a2c] transition-colors shrink-0 cursor-pointer"
         >
           <Plus size={18} />
@@ -269,7 +502,13 @@ export function InputDeck({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={selectedImageBase64 ? "Ask anything about this image..." : "Ask Nexis..."}
+          placeholder={
+            selectedImage
+              ? "Ask anything about this image..."
+              : attachedDoc
+              ? `Ask questions about ${attachedDoc.filename}...`
+              : "Ask Nexis..."
+          }
           disabled={isLoading}
           className="flex-1 bg-transparent text-[#f0f4f9] placeholder-[#8e918f] text-sm md:text-base outline-none resize-none max-h-[140px] leading-relaxed py-1"
         />
@@ -297,19 +536,38 @@ export function InputDeck({
           {/* Voice Microphone Icon */}
           <button
             type="button"
-            className="p-1.5 text-[#8e918f] hover:text-[#f0f4f9] hover:bg-[#282a2c] rounded-full transition-colors cursor-pointer"
-            title="Use microphone"
+            onClick={handleMicClick}
+            className={`p-1.5 rounded-full transition-all cursor-pointer relative ${
+              isListening
+                ? 'bg-rose-500/20 text-rose-400 ring-2 ring-rose-500/60 animate-pulse'
+                : 'text-[#8e918f] hover:text-[#f0f4f9] hover:bg-[#282a2c]'
+            }`}
+            title={
+              isListening
+                ? 'Listening... Click to stop voice input'
+                : isSupported
+                ? 'Use microphone for voice dictation'
+                : 'Speech recognition not supported in this browser'
+            }
+            aria-label={isListening ? 'Stop voice dictation' : 'Start voice dictation'}
           >
-            <Mic size={17} />
+            {isListening ? (
+              <span className="relative flex items-center justify-center">
+                <Mic size={17} className="text-rose-400" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-rose-500 rounded-full animate-ping" />
+              </span>
+            ) : (
+              <Mic size={17} />
+            )}
           </button>
 
           {/* Circular Send Arrow */}
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={(!text.trim() && !selectedImageBase64) || isLoading}
+            disabled={(!text.trim() && !selectedImage) || isLoading}
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-              (text.trim() || selectedImageBase64) && !isLoading
+              (text.trim() || selectedImage) && !isLoading
                 ? 'bg-gradient-to-tr from-[#4da2ff] to-[#9b72cf] text-white shadow-md hover:opacity-95 cursor-pointer'
                 : 'text-[#8e918f] hover:text-[#c4c7c5] hover:bg-[#282a2c]'
             }`}

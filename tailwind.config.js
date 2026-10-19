@@ -8,6 +8,10 @@ export default {
   theme: {
     extend: {
       colors: {
+        'surface-variant': '#1e1f20',
+        'border-subtle': '#2d2f31',
+        'text-primary': '#f0f4f9',
+        'text-muted': '#8e918f',
         nexis: {
           bg: '#0d0d0d',
           sidebar: '#171717',
